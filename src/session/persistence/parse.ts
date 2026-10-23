@@ -533,9 +533,20 @@ function assignParsedSessionOptions(state: SessionAcpxState, raw: unknown): void
   if (env) {
     parsedSessionOptions.env = env;
   }
+  assignSessionOptionAgentMeta(parsedSessionOptions, sessionOptions.agent_meta);
 
   if (Object.keys(parsedSessionOptions).length > 0) {
     state.session_options = parsedSessionOptions;
+  }
+}
+
+function assignSessionOptionAgentMeta(
+  options: NonNullable<SessionAcpxState["session_options"]>,
+  value: unknown,
+): void {
+  const agentMeta = asRecord(value);
+  if (agentMeta && Object.keys(agentMeta).length > 0) {
+    options.agent_meta = JSON.parse(JSON.stringify(agentMeta)) as Record<string, unknown>;
   }
 }
 

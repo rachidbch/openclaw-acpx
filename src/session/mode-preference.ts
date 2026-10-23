@@ -80,7 +80,8 @@ function hasStoredSessionOptions(
     Array.isArray(options.allowed_tools) ||
     typeof options.max_turns === "number" ||
     options.system_prompt !== undefined ||
-    options.env !== undefined
+    options.env !== undefined ||
+    options.agent_meta !== undefined
   );
 }
 

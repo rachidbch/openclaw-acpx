@@ -25,6 +25,7 @@ const OPAQUE_VALUE_PATHS = new Set([
   "messages.Agent.content.ToolUse.input",
   "acpx.desired_config_options",
   "acpx.config_options",
+  "acpx.session_options.agent_meta",
 ]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {

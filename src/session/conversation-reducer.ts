@@ -580,6 +580,9 @@ function cloneSessionOptions(
       ? { system_prompt: cloneSystemPromptOption(options.system_prompt) }
       : {}),
     ...(options.env !== undefined ? { env: { ...options.env } } : {}),
+    ...(options.agent_meta !== undefined
+      ? { agent_meta: JSON.parse(JSON.stringify(options.agent_meta)) as Record<string, unknown> }
+      : {}),
   };
 }
 

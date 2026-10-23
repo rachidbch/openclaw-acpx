@@ -1174,10 +1174,15 @@ export class AcpClient {
       this.options.agentCommand,
       this.options.agentArgv,
     );
-    return buildClaudeCodeOptionsMeta(
+    const owned = buildClaudeCodeOptionsMeta(
       this.options.sessionOptions,
       isClaudeAcpCommand(command, args),
     );
+    const agentMeta = this.options.sessionOptions?.agentMeta;
+    if (!agentMeta || Object.keys(agentMeta).length === 0) {
+      return owned;
+    }
+    return { ...agentMeta, ...owned };
   }
 
   async createSession(

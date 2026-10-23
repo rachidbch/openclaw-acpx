@@ -17,6 +17,13 @@ export type SessionAgentOptions = {
    * passing them to acpx.
    */
   env?: Record<string, string>;
+  /**
+   * Free-form agent metadata (JSON object) merged into the `_meta` of
+   * `session/new`, `session/load` and `session/resume`, and persisted with the
+   * session record for reconnects. Keys acpx builds itself (`claudeCode`,
+   * `systemPrompt`) win over the same keys here.
+   */
+  agentMeta?: Record<string, unknown>;
 };
 
 export function mergeSessionOptions(
@@ -24,12 +31,20 @@ export function mergeSessionOptions(
   fallback: SessionAgentOptions | undefined,
 ): SessionAgentOptions | undefined {
   const merged: SessionAgentOptions = { ...fallback };
-  assignDefinedOption(merged, "model", preferred?.model);
-  assignDefinedOption(merged, "allowedTools", preferred?.allowedTools);
-  assignDefinedOption(merged, "maxTurns", preferred?.maxTurns);
-  assignDefinedOption(merged, "systemPrompt", preferred?.systemPrompt);
+  assignPreferredAgentOptions(merged, preferred);
   assignDefinedOption(merged, "env", mergeEnvRecords(fallback?.env, preferred?.env));
+  assignDefinedOption(merged, "agentMeta", jsonObject(preferred?.agentMeta));
   return Object.keys(merged).length > 0 ? merged : undefined;
+}
+
+function assignPreferredAgentOptions(
+  target: SessionAgentOptions,
+  preferred: SessionAgentOptions | undefined,
+): void {
+  assignDefinedOption(target, "model", preferred?.model);
+  assignDefinedOption(target, "allowedTools", preferred?.allowedTools);
+  assignDefinedOption(target, "maxTurns", preferred?.maxTurns);
+  assignDefinedOption(target, "systemPrompt", preferred?.systemPrompt);
 }
 
 export function normalizeSessionOptionShape(
@@ -98,6 +113,7 @@ export function sessionOptionsFromRecord(record: SessionRecord): SessionAgentOpt
     normalizeSystemPromptOption(stored.system_prompt),
   );
   assignDefinedOption(sessionOptions, "env", storedEnvRecord(stored.env));
+  assignDefinedOption(sessionOptions, "agentMeta", jsonObject(stored.agent_meta));
 
   return Object.keys(sessionOptions).length > 0 ? sessionOptions : undefined;
 }
@@ -107,13 +123,16 @@ type PersistedSessionOptions = NonNullable<NonNullable<SessionRecord["acpx"]>["s
 function persistedSessionOptions(
   options: SessionAgentOptions,
 ): PersistedSessionOptions | undefined {
-  const next = {
+  const agentMeta = jsonObject(options.agentMeta);
+  const next: PersistedSessionOptions = {
     model: nonEmptyString(options.model),
     allowed_tools: Array.isArray(options.allowedTools) ? [...options.allowedTools] : undefined,
     max_turns: typeof options.maxTurns === "number" ? options.maxTurns : undefined,
     system_prompt: normalizeSystemPromptOption(options.systemPrompt),
     env: storedEnvRecord(options.env),
-  } satisfies PersistedSessionOptions;
+    // Only present when set, so records without agent metadata keep their upstream shape.
+    ...(agentMeta ? { agent_meta: agentMeta } : {}),
+  };
   return hasPersistedSessionOptions(next) ? next : undefined;
 }
 
@@ -123,8 +142,18 @@ function hasPersistedSessionOptions(options: PersistedSessionOptions): boolean {
     options.allowed_tools !== undefined ||
     options.max_turns !== undefined ||
     options.system_prompt !== undefined ||
-    options.env !== undefined
+    options.env !== undefined ||
+    options.agent_meta !== undefined
   );
+}
+
+/** A deep copy of a non-empty plain JSON object, else undefined. */
+export function jsonObject(value: unknown): Record<string, unknown> | undefined {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return undefined;
+  }
+  const copy = JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
+  return Object.keys(copy).length > 0 ? copy : undefined;
 }
 
 function storedEnvRecord(value: unknown): Record<string, string> | undefined {

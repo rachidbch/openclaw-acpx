@@ -317,6 +317,7 @@ export type AcpClientOptions = {
     maxTurns?: number;
     systemPrompt?: string | { append: string };
     env?: Record<string, string>;
+    agentMeta?: Record<string, unknown>;
   };
   onAcpMessage?: (direction: AcpMessageDirection, message: AcpJsonRpcMessage) => void;
   onAcpOutputMessage?: (direction: AcpMessageDirection, message: AcpJsonRpcMessage) => void;
@@ -467,6 +468,7 @@ export type SessionAcpxState = {
     max_turns?: number;
     system_prompt?: string | { append: string };
     env?: Record<string, string>;
+    agent_meta?: Record<string, unknown>;
   };
 };
 

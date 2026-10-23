@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { randomUUID } from "node:crypto";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { Readable, Writable } from "node:stream";
 import {
@@ -122,6 +122,8 @@ type MockAgentOptions = {
   elicitOnNewSession: boolean;
   /** If set, the agent writes its PID to this path at startup (before ACP handshake). */
   pidFile?: string;
+  /** If set, session/new, session/load and session/resume append `{method, meta}` lines here. */
+  recordRequestsFile?: string;
 };
 
 type SessionState = {
@@ -451,6 +453,7 @@ function parseMockAgentOptions(argv: string[]): MockAgentOptions {
   let hangOnNewSession = false;
   let elicitOnNewSession = false;
   let pidFile: string | undefined;
+  let recordRequestsFile: string | undefined;
 
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
@@ -637,6 +640,12 @@ function parseMockAgentOptions(argv: string[]): MockAgentOptions {
       continue;
     }
 
+    if (token === "--record-requests") {
+      recordRequestsFile = parseOptionValue(argv, index + 1, token);
+      index += 1;
+      continue;
+    }
+
     if (token === "--pid-file") {
       pidFile = parseOptionValue(argv, index + 1, token);
       index += 1;
@@ -720,6 +729,7 @@ function parseMockAgentOptions(argv: string[]): MockAgentOptions {
     queueLifecycleControl,
     elicitOnNewSession,
     pidFile,
+    recordRequestsFile,
   };
 }
 
@@ -912,7 +922,17 @@ class MockAgent implements Agent {
     return;
   }
 
+  private recordRequest(method: string, params: { _meta?: unknown }): void {
+    if (this.options.recordRequestsFile) {
+      appendFileSync(
+        this.options.recordRequestsFile,
+        `${JSON.stringify({ method, meta: params._meta ?? null })}\n`,
+      );
+    }
+  }
+
   async newSession(params: NewSessionRequest): Promise<NewSessionResponse> {
+    this.recordRequest("session/new", params);
     if (this.options.hangOnNewSession) {
       return await new Promise<NewSessionResponse>(() => {});
     }
@@ -962,6 +982,7 @@ class MockAgent implements Agent {
   }
 
   async loadSession(params: LoadSessionRequest): Promise<LoadSessionResponse> {
+    this.recordRequest("session/load", params);
     if (!this.options.supportsLoadSession) {
       throw new Error("loadSession is not supported");
     }
@@ -1006,6 +1027,7 @@ class MockAgent implements Agent {
   }
 
   async resumeSession(params: ResumeSessionRequest): Promise<ResumeSessionResponse> {
+    this.recordRequest("session/resume", params);
     if (!this.options.supportsResumeSession) {
       throw new Error("resumeSession is not supported");
     }
