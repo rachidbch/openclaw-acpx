@@ -13,6 +13,8 @@ export function createInitialSessionRecord(params: {
   cwd: string;
   agentSessionId?: string;
   sessionOrigin?: "new" | "resume";
+  /** Directory for the record's event log; defaults to `~/.acpx/sessions`. */
+  eventLogDir?: string;
 }): SessionRecord {
   const now = new Date().toISOString();
   return {
@@ -27,7 +29,7 @@ export function createInitialSessionRecord(params: {
     createdAt: now,
     lastUsedAt: now,
     lastSeq: 0,
-    eventLog: defaultSessionEventLog(params.recordId),
+    eventLog: defaultSessionEventLog(params.recordId, params.eventLogDir),
     closed: false,
     closedAt: undefined,
     ...createSessionConversation(now),

@@ -31,8 +31,8 @@ export function safeSessionId(sessionId: string): string {
   return encodeURIComponent(sessionId);
 }
 
-export function sessionEventActivePath(sessionId: string): string {
-  return path.join(sessionBaseDir(), `${safeSessionId(sessionId)}.stream.ndjson`);
+export function sessionEventActivePath(sessionId: string, baseDir = sessionBaseDir()): string {
+  return path.join(baseDir, `${safeSessionId(sessionId)}.stream.ndjson`);
 }
 
 export function sessionEventSegmentPath(sessionId: string, segment: number): string {
@@ -91,9 +91,9 @@ function eventSegmentIndex(sessionId: string, name: string): number | undefined 
   return Number.isSafeInteger(index) ? index : undefined;
 }
 
-export function defaultSessionEventLog(sessionId: string): SessionEventLog {
+export function defaultSessionEventLog(sessionId: string, baseDir?: string): SessionEventLog {
   return {
-    active_path: sessionEventActivePath(sessionId),
+    active_path: sessionEventActivePath(sessionId, baseDir),
     segment_count: DEFAULT_EVENT_MAX_SEGMENTS,
     max_segment_bytes: DEFAULT_EVENT_SEGMENT_MAX_BYTES,
     max_segments: DEFAULT_EVENT_MAX_SEGMENTS,

@@ -1161,6 +1161,7 @@ export class AcpRuntimeManager {
       agentArgv,
       cwd,
       agentSessionId: session.agentSessionId,
+      eventLogDir: this.options.sessionStore.eventLogDir,
     });
     this.closingActiveRecords.delete(record.acpxRecordId);
     record.protocolVersion = client.initializeResult?.protocolVersion;

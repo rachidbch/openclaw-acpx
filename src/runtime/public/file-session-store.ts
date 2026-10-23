@@ -17,6 +17,10 @@ class FileSessionStore implements AcpSessionStore {
     return path.join(this.stateDir, "sessions");
   }
 
+  get eventLogDir(): string {
+    return this.sessionDir;
+  }
+
   private filePath(sessionId: string): string {
     return path.join(this.sessionDir, `${safeSessionId(sessionId)}.json`);
   }

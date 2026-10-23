@@ -413,6 +413,11 @@ export type AcpSessionRecord = SessionRecord;
 export interface AcpSessionStore {
   load(sessionId: string): Promise<AcpSessionRecord | undefined>;
   save(record: AcpSessionRecord): Promise<void>;
+  /**
+   * Directory new runtime records point their event log at. Omitted keeps the
+   * CLI default `~/.acpx/sessions`; the file store uses `<stateDir>/sessions`.
+   */
+  readonly eventLogDir?: string;
 }
 
 export type AcpRuntimeSessionContext = {
