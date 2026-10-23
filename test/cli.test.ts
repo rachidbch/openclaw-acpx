@@ -18,6 +18,7 @@ import {
 import { classifySessionConnectionStatus } from "../src/cli/output/render.js";
 import { serializeSessionRecordForDisk } from "../src/session/persistence.js";
 import type { SessionRecord } from "../src/types.js";
+import { cleanupTestHome } from "./home-cleanup.js";
 import {
   cleanupOwnerArtifacts,
   closeServer,
@@ -757,11 +758,17 @@ for (const capability of ["--supports-load-session", "--supports-resume-session"
         assert.equal(stored.closed, false, `resume attempt ${attempt + 1}`);
         assert.equal(stored.acp_session_id, "same-resume");
       }
-      const prompted = await runCli([...base, "--ttl", "0", "prompt", "hello"], homeDir, {
-        timeoutMs: 10_000,
-      });
-      assert.equal(prompted.code, 0, prompted.stderr);
-      assert.match(prompted.stdout, /hello/);
+      try {
+        const prompted = await runCli([...base, "--ttl", "0", "prompt", "hello"], homeDir, {
+          timeoutMs: 10_000,
+        });
+        assert.equal(prompted.code, 0, prompted.stderr);
+        assert.match(prompted.stdout, /hello/);
+      } finally {
+        // --ttl 0 keeps the queue owner alive until its session is closed.
+        const closed = await runCli([...base, "sessions", "close"], homeDir, { timeoutMs: 10_000 });
+        assert.equal(closed.code, 0, closed.stderr);
+      }
     });
   });
 }
@@ -3405,6 +3412,7 @@ async function withTempHome(run: (homeDir: string) => Promise<void>): Promise<vo
   try {
     await run(tempHome);
   } finally {
+    await cleanupTestHome(tempHome);
     await fs.rm(tempHome, { recursive: true, force: true, maxRetries: 3, retryDelay: 50 });
   }
 }

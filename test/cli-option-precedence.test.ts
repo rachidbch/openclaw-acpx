@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import test, { type TestContext } from "node:test";
 import { fileURLToPath } from "node:url";
+import { cleanupTestHome } from "./home-cleanup.js";
 import { parseJsonRpcOutputLines } from "./jsonrpc-test-helpers.js";
 import { fileExists } from "./runtime-test-helpers.js";
 
@@ -101,6 +102,7 @@ async function fixture(t: TestContext, supportsList = true): Promise<Fixture> {
     if (hasSession) {
       succeeded(await run(["codex", "sessions", "close"]));
     }
+    await cleanupTestHome(homeDir);
     await fs.rm(root, { recursive: true, force: true });
   });
   await fs.mkdir(path.join(homeDir, ".acpx"), { recursive: true });

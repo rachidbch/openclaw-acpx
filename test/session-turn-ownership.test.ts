@@ -13,7 +13,23 @@ import {
   acquireSessionScope,
   acquireSessionTurn,
 } from "../src/session/turn-ownership.js";
-import { startKeeperProcess, withTempHome } from "./queue-test-helpers.js";
+import { startKeeperProcess, withTempHome as withQueueTempHome } from "./queue-test-helpers.js";
+
+// Ownership handles must be released while their home still exists: a release after the home
+// is removed recreates its sessions directory.
+const heldOwnerships: AsyncDisposable[] = [];
+
+async function withTempHome(run: (homeDir: string) => Promise<void>): Promise<void> {
+  await withQueueTempHome(async (homeDir) => {
+    try {
+      await run(homeDir);
+    } finally {
+      for (const held of heldOwnerships.splice(0)) {
+        await held[Symbol.asyncDispose]();
+      }
+    }
+  });
+}
 
 test("session scope ownership serializes current and historical built-in commands", async () => {
   await withTempHome(async (cwd) => {
@@ -59,25 +75,25 @@ test("session scope ownership keeps custom commands, directories, and names inde
   });
 });
 
-test("session turn ownership serializes same-process callers and survives a canceled waiter", async (t) => {
+test("session turn ownership serializes same-process callers and survives a canceled waiter", async () => {
   await withTempHome(async () => {
     const first = await acquireSessionTurn("same-process");
-    t.after(() => first[Symbol.asyncDispose]());
+    heldOwnerships.push(first);
     const original = await fs.readFile(sessionEventLockPath("same-process"), "utf8");
     await assert.rejects(acquireSessionTurn("same-process", AbortSignal.timeout(30)));
     assert.equal(await fs.readFile(sessionEventLockPath("same-process"), "utf8"), original);
     await first[Symbol.asyncDispose]();
     const next = await acquireSessionTurn("same-process");
-    t.after(() => next[Symbol.asyncDispose]());
+    heldOwnerships.push(next);
   });
 });
 
-test("session turn ownership never expires a live writer and recovers after SIGKILL", async (t) => {
+test("session turn ownership never expires a live writer and recovers after SIGKILL", async () => {
   await withTempHome(async () => {
     const keeper = await startKeeperProcess();
     try {
       const first = await acquireSessionTurn("live-writer");
-      t.after(() => first[Symbol.asyncDispose]());
+      heldOwnerships.push(first);
       await first[Symbol.asyncDispose]();
       const filePath = sessionEventLockPath("live-writer");
       const payload = `${JSON.stringify({ pid: keeper.pid, created_at: "2026-01-01T00:00:00.000Z" })}\n`;
@@ -88,7 +104,7 @@ test("session turn ownership never expires a live writer and recovers after SIGK
       keeper.kill("SIGKILL");
       await exited;
       const recovered = await acquireSessionTurn("live-writer");
-      t.after(() => recovered[Symbol.asyncDispose]());
+      heldOwnerships.push(recovered);
     } finally {
       if (keeper.exitCode == null && keeper.signalCode == null) {
         const exited = once(keeper, "exit");
@@ -99,24 +115,24 @@ test("session turn ownership never expires a live writer and recovers after SIGK
   });
 });
 
-test("session turn release leaves a successor's lock intact", async (t) => {
+test("session turn release leaves a successor's lock intact", async () => {
   await withTempHome(async () => {
     const first = await acquireSessionTurn("successor");
-    t.after(() => first[Symbol.asyncDispose]());
+    heldOwnerships.push(first);
     const filePath = sessionEventLockPath("successor");
     await first[Symbol.asyncDispose]();
     const successor = await acquireSessionTurn("successor");
-    t.after(() => successor[Symbol.asyncDispose]());
+    heldOwnerships.push(successor);
     const current = await fs.readFile(filePath, "utf8");
     await first[Symbol.asyncDispose]();
     assert.equal(await fs.readFile(filePath, "utf8"), current);
   });
 });
 
-test("session turn ownership preserves incomplete reservations until their grace period expires", async (t) => {
+test("session turn ownership preserves incomplete reservations until their grace period expires", async () => {
   await withTempHome(async () => {
     const first = await acquireSessionTurn("incomplete");
-    t.after(() => first[Symbol.asyncDispose]());
+    heldOwnerships.push(first);
     await first[Symbol.asyncDispose]();
     const filePath = sessionEventLockPath("incomplete");
     await fs.writeFile(filePath, "");
@@ -124,7 +140,7 @@ test("session turn ownership preserves incomplete reservations until their grace
     assert.equal(await fs.readFile(filePath, "utf8"), "");
     await fs.utimes(filePath, 0, 0);
     const recovered = await acquireSessionTurn("incomplete");
-    t.after(() => recovered[Symbol.asyncDispose]());
+    heldOwnerships.push(recovered);
   });
 });
 
@@ -134,7 +150,7 @@ test("session turn ownership keeps exclusive creation on filesystems without har
   });
   await withTempHome(async () => {
     const first = await acquireSessionTurn("no-hardlinks");
-    t.after(() => first[Symbol.asyncDispose]());
+    heldOwnerships.push(first);
     await assert.rejects(acquireSessionTurn("no-hardlinks", AbortSignal.timeout(30)));
     const payload = JSON.parse(await fs.readFile(sessionEventLockPath("no-hardlinks"), "utf8")) as {
       pid: number;

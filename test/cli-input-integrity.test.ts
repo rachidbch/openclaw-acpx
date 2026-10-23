@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { cleanupTestHome } from "./home-cleanup.js";
 
 const cli = fileURLToPath(new URL("../src/cli.js", import.meta.url));
 const agent = `node ${JSON.stringify(fileURLToPath(new URL("./mock-agent.js", import.meta.url)))} --supports-load-session`;
@@ -87,6 +88,7 @@ async function fixture(
   try {
     await run(home, execute);
   } finally {
+    await cleanupTestHome(home);
     await fs.rm(home, { recursive: true, force: true });
   }
 }

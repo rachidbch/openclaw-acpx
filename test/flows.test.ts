@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import test from "node:test";
+import test, { after } from "node:test";
 import { fileURLToPath } from "node:url";
 import { TimeoutError } from "../src/async-control.js";
 import { decision, decisionEdge } from "../src/flows/decision.js";
@@ -829,7 +829,7 @@ test("FlowRunner writes isolated ACP bundle traces and artifacts", async () => {
     const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "acpx-flow-isolated-trace-"));
 
     try {
-      const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "acpx-flow-store-"));
+      const outputRoot = await makeFlowStoreRoot();
       const runner = new FlowRunner({
         resolveAgent: () => ({
           agentName: "mock",
@@ -924,7 +924,7 @@ test("FlowRunner writes persistent ACP bundle traces and session bindings", asyn
     const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "acpx-flow-persistent-trace-"));
 
     try {
-      const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "acpx-flow-store-"));
+      const outputRoot = await makeFlowStoreRoot();
       const runner = new FlowRunner({
         resolveAgent: () => ({
           agentName: "mock",
@@ -1012,7 +1012,7 @@ test("FlowRunner keeps the first persistent prompt on the creating client when e
     const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "acpx-flow-persistent-first-turn-"));
 
     try {
-      const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "acpx-flow-store-"));
+      const outputRoot = await makeFlowStoreRoot();
       const runner = new FlowRunner({
         resolveAgent: () => ({
           agentName: "mock",
@@ -1049,7 +1049,7 @@ test("FlowRunner fails persistent ACP sessions when session/load cannot resume t
     const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "acpx-flow-persistent-resume-"));
 
     try {
-      const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "acpx-flow-store-"));
+      const outputRoot = await makeFlowStoreRoot();
       const runner = new FlowRunner({
         resolveAgent: () => ({
           agentName: "mock",
@@ -1096,7 +1096,7 @@ test("FlowRunner fails persistent ACP sessions when the agent cannot reload the 
     const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "acpx-flow-persistent-no-load-"));
 
     try {
-      const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "acpx-flow-store-"));
+      const outputRoot = await makeFlowStoreRoot();
       const runner = new FlowRunner({
         resolveAgent: () => ({
           agentName: "mock",
@@ -1147,7 +1147,7 @@ test("FlowRunner stops at checkpoint nodes and marks the run as waiting", async 
         cwd: process.cwd(),
       }),
       permissionMode: "approve-all",
-      outputRoot: await fs.mkdtemp(path.join(os.tmpdir(), "acpx-flow-store-")),
+      outputRoot: await makeFlowStoreRoot(),
     });
 
     const flow = defineFlow({
@@ -1180,7 +1180,7 @@ test("FlowRunner stops at checkpoint nodes and marks the run as waiting", async 
 
 test("FlowRunner marks a checkpoint run failed when waiting snapshot persistence fails", async () => {
   await withTempHome(async () => {
-    const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "acpx-flow-store-"));
+    const outputRoot = await makeFlowStoreRoot();
     const runner = new FlowRunner({
       resolveAgent: () => ({
         agentName: "unused",
@@ -1235,7 +1235,7 @@ test("FlowRunner executes native shell actions and parses structured output", as
         cwd: process.cwd(),
       }),
       permissionMode: "approve-all",
-      outputRoot: await fs.mkdtemp(path.join(os.tmpdir(), "acpx-flow-store-")),
+      outputRoot: await makeFlowStoreRoot(),
     });
 
     const flow = defineFlow({
@@ -1261,7 +1261,7 @@ test("FlowRunner executes native shell actions and parses structured output", as
 
 test("FlowRunner marks a completed run failed when the final snapshot write fails", async () => {
   await withTempHome(async () => {
-    const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "acpx-flow-store-"));
+    const outputRoot = await makeFlowStoreRoot();
     const runner = new FlowRunner({
       resolveAgent: () => ({
         agentName: "unused",
@@ -1335,7 +1335,7 @@ test("full flow validation rejects multiple outgoing edges from the same node", 
 
 test("FlowRunner persists active node state while a shell step is running", async () => {
   await withTempHome(async () => {
-    const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "acpx-flow-store-"));
+    const outputRoot = await makeFlowStoreRoot();
     const runner = new FlowRunner({
       resolveAgent: () => ({
         agentName: "unused",
@@ -1470,7 +1470,7 @@ test("FlowRunner lets ACP nodes run in a dynamic working directory", async () =>
           cwd: baseCwd,
         }),
         permissionMode: "approve-all",
-        outputRoot: await fs.mkdtemp(path.join(os.tmpdir(), "acpx-flow-store-")),
+        outputRoot: await makeFlowStoreRoot(),
       });
 
       const flow = defineFlow({
@@ -1522,7 +1522,7 @@ test("FlowRunner keeps same session handles isolated by working directory", asyn
           cwd: baseCwd,
         }),
         permissionMode: "approve-all",
-        outputRoot: await fs.mkdtemp(path.join(os.tmpdir(), "acpx-flow-store-")),
+        outputRoot: await makeFlowStoreRoot(),
       });
 
       const flow = defineFlow({
@@ -1567,7 +1567,7 @@ test("FlowRunner keeps same session handles isolated by working directory", asyn
 
 test("FlowRunner marks timed out shell steps explicitly", async () => {
   await withTempHome(async () => {
-    const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "acpx-flow-store-"));
+    const outputRoot = await makeFlowStoreRoot();
     const runner = new FlowRunner({
       resolveAgent: () => ({
         agentName: "unused",
@@ -1611,7 +1611,7 @@ test("FlowRunner marks timed out shell steps explicitly", async () => {
 
 test("FlowRunner preserves shell timeoutMs 0 as no action deadline", async () => {
   await withTempHome(async () => {
-    const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "acpx-flow-store-"));
+    const outputRoot = await makeFlowStoreRoot();
     const runner = new FlowRunner({
       resolveAgent: () => ({
         agentName: "unused",
@@ -1646,7 +1646,7 @@ test("FlowRunner preserves shell timeoutMs 0 as no action deadline", async () =>
 
 test("FlowRunner can route timed out nodes by outcome", async () => {
   await withTempHome(async () => {
-    const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "acpx-flow-store-"));
+    const outputRoot = await makeFlowStoreRoot();
     const runner = new FlowRunner({
       resolveAgent: () => ({
         agentName: "unused",
@@ -1700,7 +1700,7 @@ test("FlowRunner can route timed out nodes by outcome", async () => {
 
 test("FlowRunner times out async shell exec callbacks", async () => {
   await withTempHome(async () => {
-    const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "acpx-flow-store-"));
+    const outputRoot = await makeFlowStoreRoot();
     const runner = new FlowRunner({
       resolveAgent: () => ({
         agentName: "unused",
@@ -1733,7 +1733,7 @@ test("FlowRunner times out async shell exec callbacks", async () => {
 
 test("FlowRunner times out async shell parse callbacks", async () => {
   await withTempHome(async () => {
-    const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "acpx-flow-store-"));
+    const outputRoot = await makeFlowStoreRoot();
     const runner = new FlowRunner({
       resolveAgent: () => ({
         agentName: "unused",
@@ -1782,7 +1782,7 @@ test("FlowRunner times out async shell parse callbacks", async () => {
 
 test("FlowRunner times out async ACP prompt callbacks", async () => {
   await withTempHome(async () => {
-    const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "acpx-flow-store-"));
+    const outputRoot = await makeFlowStoreRoot();
     const runner = new FlowRunner({
       resolveAgent: () => ({
         agentName: "mock",
@@ -1818,7 +1818,7 @@ test("FlowRunner times out async ACP prompt callbacks", async () => {
 
 test("FlowRunner times out async ACP parse callbacks", async () => {
   await withTempHome(async () => {
-    const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "acpx-flow-store-"));
+    const outputRoot = await makeFlowStoreRoot();
     const runner = new FlowRunner({
       resolveAgent: () => ({
         agentName: "mock",
@@ -1859,7 +1859,7 @@ test("FlowRunner times out async ACP parse callbacks", async () => {
 
 test("FlowRunner respects per-node timeouts while creating persistent ACP sessions", async () => {
   await withTempHome(async () => {
-    const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "acpx-flow-store-"));
+    const outputRoot = await makeFlowStoreRoot();
     const runner = new FlowRunner({
       resolveAgent: () => ({
         agentName: "unused",
@@ -1896,7 +1896,7 @@ test("FlowRunner respects per-node timeouts while creating persistent ACP sessio
 
 test("FlowRunner times out async checkpoint callbacks", async () => {
   await withTempHome(async () => {
-    const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "acpx-flow-store-"));
+    const outputRoot = await makeFlowStoreRoot();
     const runner = new FlowRunner({
       resolveAgent: () => ({
         agentName: "unused",
@@ -1929,7 +1929,7 @@ test("FlowRunner times out async checkpoint callbacks", async () => {
 
 test("FlowRunner stores successful node results separately from outputs", async () => {
   await withTempHome(async () => {
-    const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "acpx-flow-store-"));
+    const outputRoot = await makeFlowStoreRoot();
     const runner = new FlowRunner({
       resolveAgent: () => ({
         agentName: "unused",
@@ -2039,6 +2039,18 @@ test("FlowRunner records callback and output serialization failures as failed st
       }
     }
   });
+});
+
+const flowStoreRoots: string[] = [];
+
+async function makeFlowStoreRoot(): Promise<string> {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "acpx-flow-store-"));
+  flowStoreRoots.push(root);
+  return root;
+}
+
+after(async () => {
+  await Promise.all(flowStoreRoots.map((root) => fs.rm(root, { recursive: true, force: true })));
 });
 
 async function withTempHome(run: (homeDir: string) => Promise<void>): Promise<void> {

@@ -185,7 +185,7 @@ test("listSessionEvents skips malformed NDJSON lines", async () => {
   });
 });
 
-test("session turn ownership recovers stale stream lock files", async (t) => {
+test("session turn ownership recovers stale stream lock files", async () => {
   await withTempHome(async (homeDir) => {
     const cwd = path.join(homeDir, "workspace");
     await fs.mkdir(cwd, { recursive: true });
@@ -210,16 +210,19 @@ test("session turn ownership recovers stale stream lock files", async (t) => {
     );
 
     const ownership = await acquireSessionTurn(sessionId);
-    t.after(() => ownership[Symbol.asyncDispose]());
-    const writer = await SessionEventWriter.open(record);
-    await writer.appendMessage({
-      jsonrpc: "2.0",
-      id: "req-stale-lock",
-      result: { stopReason: "end_turn" },
-    } as never);
-    await writer.close({ checkpoint: true });
+    try {
+      const writer = await SessionEventWriter.open(record);
+      await writer.appendMessage({
+        jsonrpc: "2.0",
+        id: "req-stale-lock",
+        result: { stopReason: "end_turn" },
+      } as never);
+      await writer.close({ checkpoint: true });
 
-    const stored = await resolveSessionRecord(sessionId);
-    assert.equal(stored.lastRequestId, "req-stale-lock");
+      const stored = await resolveSessionRecord(sessionId);
+      assert.equal(stored.lastRequestId, "req-stale-lock");
+    } finally {
+      await ownership[Symbol.asyncDispose]();
+    }
   });
 });

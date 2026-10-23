@@ -20,6 +20,7 @@ import {
 } from "../src/session/conversation-model.js";
 import { parseSessionRecord } from "../src/session/persistence.js";
 import type { SessionRecord } from "../src/types.js";
+import { cleanupTestHome } from "./home-cleanup.js";
 import {
   extractAgentMessageChunkText,
   extractJsonRpcId,
@@ -513,6 +514,7 @@ test("integration: flow run executes multiple ACP steps in one session and branc
 test("integration: flow run supports dynamic ACP working directories", async () => {
   await withTempHome(async (homeDir) => {
     const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "acpx-integration-cwd-"));
+    let createdWorkdir: string | undefined;
 
     try {
       const result = await runCli(
@@ -543,6 +545,7 @@ test("integration: flow run supports dynamic ACP working directories", async () 
       assert.equal(payload.action, "flow_run_result");
       assert.equal(payload.status, "completed");
       const workdir = payload.outputs?.prepare?.workdir;
+      createdWorkdir = workdir;
       const finalCwd = payload.outputs?.finalize?.cwd;
       assert.equal(typeof workdir, "string");
       assert.equal(typeof finalCwd, "string");
@@ -551,6 +554,10 @@ test("integration: flow run supports dynamic ACP working directories", async () 
       assert.equal(bindings.length, 1);
       assert.equal(await fs.realpath(bindings[0]?.cwd ?? ""), await fs.realpath(String(workdir)));
     } finally {
+      // The flow fixture made this directory, not the test.
+      if (createdWorkdir) {
+        await fs.rm(createdWorkdir, { recursive: true, force: true });
+      }
       await fs.rm(cwd, { recursive: true, force: true });
     }
   });
@@ -5746,6 +5753,7 @@ async function withTempHome(run: (homeDir: string) => Promise<void>): Promise<vo
   const tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "acpx-integration-home-"));
   const body = await observeTestOutcome(() => run(tempHome));
   const cleanup = await observeTestOutcome(async () => {
+    await cleanupTestHome(tempHome);
     if (retainedCliHomes.delete(tempHome)) {
       throw new Error(
         `Retained test HOME because owned CLI or fixture cleanup was not proved: ${tempHome}`,

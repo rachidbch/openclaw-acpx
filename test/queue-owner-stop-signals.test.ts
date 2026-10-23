@@ -14,6 +14,7 @@ import {
   readQueueOwnerRecord,
 } from "../src/session/queue/lease-store.js";
 import { queueLockFilePath, queueSocketPath } from "../src/session/queue/paths.js";
+import { cleanupTestHome } from "./home-cleanup.js";
 import { makeSessionRecord, withTempHome, writeSessionRecordFile } from "./runtime-test-helpers.js";
 
 const SIGNALS = ["SIGINT", "SIGTERM", "SIGHUP"] as const;
@@ -211,6 +212,7 @@ for (const phase of ["acquisition", "shutdown", "release"] as const) {
               throw error;
             }
           });
+          await cleanupTestHome(home);
           await fs.rm(home, { recursive: true, force: true });
         } else {
           t.diagnostic(`Retained unjoined fixture state: ${home}`);

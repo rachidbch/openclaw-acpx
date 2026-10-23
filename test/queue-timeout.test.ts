@@ -8,6 +8,7 @@ import test from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { TimeoutError, withTimeout } from "../src/async-control.js";
 import { settleQueueCase } from "./fixtures/queue-timeout-host.js";
+import { cleanupTestHome } from "./home-cleanup.js";
 
 const HOST = fileURLToPath(new URL("./fixtures/queue-timeout-host.js", import.meta.url));
 const CASE_TIMEOUT_MS = 30_000;
@@ -253,6 +254,7 @@ for (const mode of [
         };
         remainingCaseTime(deadline);
         assert.equal(result.outcome, "passed");
+        await cleanupTestHome(home);
         await fs.rm(home, { recursive: true, force: true });
         removed = true;
         remainingCaseTime(deadline);
@@ -392,6 +394,7 @@ test("queue fixture keeps a deadline failure after the host stops normally", asy
   } finally {
     // This controlled host has no children. Unknown or failed retirement keeps its home.
     if (joined) {
+      await cleanupTestHome(home);
       await fs.rm(home, { recursive: true, force: true });
     }
   }
@@ -430,6 +433,7 @@ for (const cooperative of [true, false]) {
       }
     } finally {
       if (joined) {
+        await cleanupTestHome(home);
         await fs.rm(home, { recursive: true, force: true });
       }
     }
@@ -458,6 +462,7 @@ test("queue fixture failed finally keeps bounded shutdown after disconnect", asy
   } finally {
     // This control owns only an inert timer; verified host close ends all its activity.
     if (joined) {
+      await cleanupTestHome(home);
       await fs.rm(home, { recursive: true, force: true });
     }
   }

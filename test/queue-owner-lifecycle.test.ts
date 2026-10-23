@@ -23,6 +23,7 @@ import { runSessionQueueOwner } from "../src/session/execution/queue-owner-runti
 import { QueueLeaseGuardSettlementError } from "../src/session/queue/lease-mutation.js";
 import { isProcessAlive } from "../src/session/queue/lease-store.js";
 import { queueLockFilePath, queueSocketPath } from "../src/session/queue/paths.js";
+import { cleanupTestHome } from "./home-cleanup.js";
 import { extractAgentMessageChunkText } from "./jsonrpc-test-helpers.js";
 import { verifiedProcessIdentity } from "./queue-test-helpers.js";
 import { makeSessionRecord, withTempHome, writeSessionRecordFile } from "./runtime-test-helpers.js";
@@ -408,6 +409,7 @@ async function withQueueOwnerHome(
       }
       if (retired) {
         try {
+          await cleanupTestHome(homeDir);
           await (
             options.removeHome ??
             ((directory) => fs.rm(directory, { recursive: true, force: true }))

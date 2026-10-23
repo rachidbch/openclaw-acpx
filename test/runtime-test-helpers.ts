@@ -4,6 +4,7 @@ import path from "node:path";
 import type { AcpAgentRegistry, AcpRuntimeOptions, AcpSessionStore } from "../src/runtime.js";
 import { serializeSessionRecordForDisk } from "../src/session/persistence.js";
 import type { SessionRecord } from "../src/types.js";
+import { cleanupTestHome } from "./home-cleanup.js";
 
 export type MakeSessionRecordOptions = {
   defaultName?: boolean;
@@ -102,6 +103,7 @@ export async function withTempHome<T>(
         process.env.USERPROFILE = originalProfile;
       }
     }
+    await cleanupTestHome(tempHome);
     await fs.rm(tempHome, { recursive: true, force: true });
   }
 }
