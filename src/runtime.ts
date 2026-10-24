@@ -1,4 +1,4 @@
-import type { SetSessionConfigOptionResponse } from "@agentclientprotocol/sdk";
+import type { InitializeResponse, SetSessionConfigOptionResponse } from "@agentclientprotocol/sdk";
 import { snapshotEnvNames } from "./acp/inherited-env.js";
 import { DEFAULT_AGENT_NAME } from "./agent-registry.js";
 import type { AcpControlAuthority } from "./async-control.js";
@@ -149,6 +149,20 @@ export class AcpxRuntime implements AcpxRuntimeLike {
 
   isHealthy(): boolean {
     return this.healthy;
+  }
+
+  async extRequest(input: {
+    handle: AcpRuntimeHandle;
+    method: string;
+    params: Record<string, unknown>;
+  }): Promise<Record<string, unknown>> {
+    const { handle } = this.resolveManagerHandle(input.handle);
+    return (await this.getManager()).extRequest(handle, input.method, input.params);
+  }
+
+  async getAgentInfo(input: { handle: AcpRuntimeHandle }): Promise<InitializeResponse> {
+    const { handle } = this.resolveManagerHandle(input.handle);
+    return (await this.getManager()).getAgentInfo(handle);
   }
 
   async probeAvailability(): Promise<void> {

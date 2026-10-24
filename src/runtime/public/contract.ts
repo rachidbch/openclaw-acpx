@@ -2,6 +2,7 @@ import type { AcpAgentRegistry } from "../../agent-registry.js";
 import type { AcpControlAuthority } from "../../async-control.js";
 export type { AcpAgentRegistry } from "../../agent-registry.js";
 import type {
+  InitializeResponse,
   SetSessionConfigOptionResponse,
   ToolCallContent,
   ToolCallLocation,
@@ -363,6 +364,14 @@ export interface AcpRuntimeTurn {
 }
 
 export interface AcpRuntime {
+  /** Sends a custom method on an existing live adapter connection, without reconnecting. */
+  extRequest?(input: {
+    handle: AcpRuntimeHandle;
+    method: string;
+    params: Record<string, unknown>;
+  }): Promise<Record<string, unknown>>;
+  /** Returns the live adapter's complete initialization response, including metadata. */
+  getAgentInfo?(input: { handle: AcpRuntimeHandle }): Promise<InitializeResponse>;
   /** Passively replays and follows recorded turns when the backend supports a shared journal. */
   watchSession?(input: {
     handle: AcpRuntimeHandle;

@@ -1,7 +1,11 @@
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
-import type { SessionNotification, SetSessionConfigOptionResponse } from "@agentclientprotocol/sdk";
+import type {
+  InitializeResponse,
+  SessionNotification,
+  SetSessionConfigOptionResponse,
+} from "@agentclientprotocol/sdk";
 import { normalizeAgentCommandInput } from "../../acp/client-process.js";
 import { AcpClient } from "../../acp/client.js";
 import { normalizeOutputError } from "../../acp/error-normalization.js";
@@ -1842,6 +1846,37 @@ export class AcpRuntimeManager {
   getStatus(handle: AcpRuntimeHandle): Promise<AcpRuntimeStatus> {
     this.assertOpen();
     return this.trackTask(this.readStatus(handle));
+  }
+
+  private requireLiveClient(handle: AcpRuntimeHandle): AcpClient {
+    this.assertOpen();
+    const recordId = handle.acpxRecordId ?? handle.sessionKey;
+    const owner = this.retainedSessionOwners.get(recordId);
+    const client =
+      this.activeTurnClients.get(recordId) ?? (owner?.retirement ? undefined : owner?.client);
+    if (!client?.getAgentLifecycleSnapshot().running) {
+      throw new AcpRuntimeError(
+        "ACP_BACKEND_UNAVAILABLE",
+        "ACP session has no live adapter connection.",
+      );
+    }
+    return client;
+  }
+
+  extRequest(
+    handle: AcpRuntimeHandle,
+    method: string,
+    params: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> {
+    return this.trackTask(this.requireLiveClient(handle).extRequest(method, params));
+  }
+
+  getAgentInfo(handle: AcpRuntimeHandle): InitializeResponse {
+    const result = this.requireLiveClient(handle).initializeResult;
+    if (!result) {
+      throw new AcpRuntimeError("ACP_BACKEND_UNAVAILABLE", "ACP adapter is not initialized.");
+    }
+    return structuredClone(result);
   }
 
   private async readStatus(handle: AcpRuntimeHandle): Promise<AcpRuntimeStatus> {

@@ -485,6 +485,16 @@ export class AcpClient {
     return this.initResult;
   }
 
+  async extRequest(
+    method: string,
+    params: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> {
+    const connection = this.getConnection();
+    return this.runConnectionRequest(() =>
+      connection.agent.request<Record<string, unknown>, Record<string, unknown>>(method, params),
+    );
+  }
+
   getAgentPid(): number | undefined {
     return this.agent?.pid ?? this.lastKnownPid;
   }

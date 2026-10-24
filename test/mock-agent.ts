@@ -923,10 +923,6 @@ class MockAgent implements Agent {
     return;
   }
 
-  async extMethod(_method: string, params: Record<string, unknown>): Promise<Record<string, unknown>> {
-    return params;
-  }
-
   private recordRequest(method: string, params: { _meta?: unknown }): void {
     if (this.options.recordRequestsFile) {
       appendFileSync(
@@ -1310,6 +1306,9 @@ class MockAgent implements Agent {
     method: string,
     params: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
+    if (method === "_test/echo") {
+      return params;
+    }
     if (method !== "session/set_model") {
       throw RequestError.methodNotFound(method);
     }
