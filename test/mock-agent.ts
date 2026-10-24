@@ -905,6 +905,7 @@ class MockAgent implements Agent {
     await this.runOptionalAction("initialize", this.options.initializeAction);
     return {
       protocolVersion: PROTOCOL_VERSION,
+      _meta: { steering: { supported: true } },
       authMethods: [],
       agentCapabilities: {
         ...(this.options.supportsLoadSession ? { loadSession: true } : {}),
@@ -920,6 +921,10 @@ class MockAgent implements Agent {
 
   async authenticate(): Promise<void> {
     return;
+  }
+
+  async extMethod(_method: string, params: Record<string, unknown>): Promise<Record<string, unknown>> {
+    return params;
   }
 
   private recordRequest(method: string, params: { _meta?: unknown }): void {
