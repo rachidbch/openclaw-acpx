@@ -307,6 +307,7 @@ async function createOrLoadRuntimeSession(
 
 export class AcpRuntimeManager {
   private readonly activeControllers = new Map<string, ActiveSessionController>();
+  private readonly activeTurnClients = new Map<string, AcpClient>();
   private readonly controlSessionRecords = new Map<string, RuntimeControlSession>();
   private readonly retainedSessionOwners = new Map<string, RuntimeSessionOwner>();
   private readonly retiringSessionOwners = new Set<RuntimeSessionOwner>();
@@ -1500,6 +1501,7 @@ export class AcpRuntimeManager {
     owner.recordId = record.acpxRecordId;
     task.state.activeController = this.buildRuntimeTurnController(task, turn);
     this.activeControllers.set(record.acpxRecordId, task.state.activeController);
+    this.activeTurnClients.set(record.acpxRecordId, turn.client);
     owner.projection = undefined;
     owner.activeTurn = { task, turn };
     owner.bufferSessionUpdates = false;
@@ -1809,6 +1811,7 @@ export class AcpRuntimeManager {
   private cleanupRuntimeTurn(task: RuntimeTurnTask, turn: RunningRuntimeTurn | undefined): void {
     if (turn) {
       this.activeControllers.delete(turn.record.acpxRecordId);
+      this.activeTurnClients.delete(turn.record.acpxRecordId);
       this.closingActiveRecords.delete(turn.record.acpxRecordId);
     }
     task.queue.close();
@@ -2057,6 +2060,8 @@ export class AcpRuntimeManager {
     this.markActiveRuntimeRecordClosing(record);
     if (intent !== "prepare-fresh") {
       await this.cancelSessionTasks(recordId);
+      // A turn whose agent ignores cancel would otherwise keep its client, and the adapter, alive.
+      await this.activeTurnClients.get(record.acpxRecordId)?.close();
     }
     const closeFailure = await this.closeRuntimeRecordOwnership(record, intent);
     if (intent === "discard") {

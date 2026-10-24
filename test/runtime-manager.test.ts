@@ -2014,7 +2014,7 @@ for (const stopReading of ["closeStream", "break"] as const) {
   });
 }
 
-test("AcpRuntimeManager does not pool a persistent client after active close", async () => {
+test("AcpRuntimeManager closes the active turn's client on close and does not pool it", async () => {
   const record = makeSessionRecord({
     acpxRecordId: "active-close-session",
     acpSessionId: "active-close-sid",
@@ -2088,7 +2088,7 @@ test("AcpRuntimeManager does not pool a persistent client after active close", a
 
   let closed = await store.load("active-close-session");
   assert.equal(closed?.closed, true);
-  assert.equal(closeCalls, 0);
+  assert.equal(closeCalls, 1);
 
   resolvePrompt({ stopReason: "cancelled" });
 
@@ -2099,7 +2099,7 @@ test("AcpRuntimeManager does not pool a persistent client after active close", a
 
   assert.deepEqual(events, []);
   assert.deepEqual(result, { status: "cancelled", stopReason: "cancelled" });
-  assert.equal(closeCalls, 1);
+  assert.equal(closeCalls, 2); // once by close, again at the turn's end; never pooled
   assert.equal(promptCalls, 1);
   assert.equal(closed?.closed, true);
   assert.equal(typeof closed?.closedAt, "string");

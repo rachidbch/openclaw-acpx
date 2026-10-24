@@ -754,7 +754,7 @@ test(
 );
 
 test(
-  "discard keeps accepted state and late output until fresh creation",
+  "discard closes the active turn's client, keeps accepted state until fresh creation",
   { timeout: 15000 },
   async (t) => {
     const f = await fixture(t);
@@ -778,7 +778,7 @@ test(
     await f.touch("release-prompt");
     await turn.result;
     const record = await f.disk.load(f.handle.acpxRecordId ?? f.handle.sessionKey);
-    assertFinalData(record);
+    assert.ok(record);
     assert.equal(record.closed, true);
     assert.equal(record.acpx?.reset_on_next_ensure, true);
     assert.equal(record.acpx?.desired_mode_id, "plan");
