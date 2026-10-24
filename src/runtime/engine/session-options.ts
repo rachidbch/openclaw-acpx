@@ -5,6 +5,8 @@ export type SystemPromptOption = string | { append: string };
 export type SessionAgentOptions = {
   model?: string;
   allowedTools?: string[];
+  /** Claude SDK tool availability. Unlike allowedTools, this does not approve calls. */
+  tools?: string[];
   maxTurns?: number;
   systemPrompt?: SystemPromptOption;
   /**
@@ -43,6 +45,7 @@ function assignPreferredAgentOptions(
 ): void {
   assignDefinedOption(target, "model", preferred?.model);
   assignDefinedOption(target, "allowedTools", preferred?.allowedTools);
+  assignDefinedOption(target, "tools", preferred?.tools);
   assignDefinedOption(target, "maxTurns", preferred?.maxTurns);
   assignDefinedOption(target, "systemPrompt", preferred?.systemPrompt);
 }
@@ -106,6 +109,7 @@ export function sessionOptionsFromRecord(record: SessionRecord): SessionAgentOpt
   const sessionOptions: SessionAgentOptions = {};
   assignDefinedOption(sessionOptions, "model", nonEmptyString(stored.model));
   assignDefinedOption(sessionOptions, "allowedTools", storedAllowedTools(stored.allowed_tools));
+  assignDefinedOption(sessionOptions, "tools", storedAllowedTools(stored.tools));
   assignDefinedOption(sessionOptions, "maxTurns", storedMaxTurns(stored.max_turns));
   assignDefinedOption(
     sessionOptions,
@@ -127,6 +131,7 @@ function persistedSessionOptions(
   const next: PersistedSessionOptions = {
     model: nonEmptyString(options.model),
     allowed_tools: Array.isArray(options.allowedTools) ? [...options.allowedTools] : undefined,
+    ...(Array.isArray(options.tools) ? { tools: [...options.tools] } : {}),
     max_turns: typeof options.maxTurns === "number" ? options.maxTurns : undefined,
     system_prompt: normalizeSystemPromptOption(options.systemPrompt),
     env: storedEnvRecord(options.env),
@@ -140,6 +145,7 @@ function hasPersistedSessionOptions(options: PersistedSessionOptions): boolean {
   return (
     options.model !== undefined ||
     options.allowed_tools !== undefined ||
+    options.tools !== undefined ||
     options.max_turns !== undefined ||
     options.system_prompt !== undefined ||
     options.env !== undefined ||

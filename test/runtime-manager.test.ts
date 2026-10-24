@@ -5441,6 +5441,7 @@ test("AcpRuntimeManager persists sessionOptions { append } and model/allowedTool
     systemPrompt: { append: "Also review tests." },
     model: "fast",
     allowedTools: ["read", "edit"],
+    tools: ["Read"],
     maxTurns: 5,
   };
   const record = await manager.ensureSession({
@@ -5457,10 +5458,12 @@ test("AcpRuntimeManager persists sessionOptions { append } and model/allowedTool
   assert.deepEqual(record.acpx?.session_options, {
     model: "fast",
     allowed_tools: ["read", "edit"],
+    tools: ["Read"],
     max_turns: 5,
     system_prompt: { append: "Also review tests." },
     env: undefined,
   });
+  assert.deepEqual(sessionOptionsFromRecord(record), sessionOptions);
 });
 
 test("persistSessionOptions preserves an explicit empty allowedTools list", () => {

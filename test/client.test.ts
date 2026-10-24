@@ -1130,6 +1130,29 @@ for (const method of ["load", "resume"] as const) {
   });
 }
 
+test("Claude tool availability reaches SDK options without auto-approval", async (t) => {
+  const fixture = createClientFixture(t, {
+    client: {
+      agentCommand: "npx -y @agentclientprotocol/claude-agent-acp",
+      sessionOptions: {
+        tools: ["Read"],
+        agentMeta: { jetbrains: { air: { customInstructions: "review only" } } },
+      },
+    },
+  });
+  const pending = fixture.track(
+    fixture.client.createSession(path.resolve("/tmp/acpx-claude-tools")),
+  );
+  const request = await fixture.message(0);
+  assert("method" in request);
+  assert.deepEqual((request.params as { _meta?: unknown })._meta, {
+    jetbrains: { air: { customInstructions: "review only" } },
+    claudeCode: { options: { settingSources: ["project", "local"], tools: ["Read"] } },
+  });
+  await fixture.reply(request, { sessionId: "claude-tools" });
+  await pending;
+});
+
 test("resolveClaudeCodeSettingSources includes user settings only when explicitly enabled", () => {
   assert.deepEqual(resolveClaudeCodeSettingSources({}), ["project", "local"]);
   assert.deepEqual(resolveClaudeCodeSettingSources({ ACPX_CLAUDE_INCLUDE_USER_SETTINGS: "1" }), [

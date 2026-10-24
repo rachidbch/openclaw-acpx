@@ -314,6 +314,8 @@ export type AcpClientOptions = {
   sessionOptions?: {
     model?: string;
     allowedTools?: string[];
+    /** Claude SDK tool availability. Unlike allowedTools, this does not approve calls. */
+    tools?: string[];
     maxTurns?: number;
     systemPrompt?: string | { append: string };
     env?: Record<string, string>;
@@ -465,6 +467,7 @@ export type SessionAcpxState = {
   session_options?: {
     model?: string;
     allowed_tools?: string[];
+    tools?: string[];
     max_turns?: number;
     system_prompt?: string | { append: string };
     env?: Record<string, string>;
