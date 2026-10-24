@@ -30,6 +30,7 @@ describe("parseQueueOwnerPayload", () => {
         sessionOptions: {
           model: "fast-model",
           allowedTools: ["Read"],
+          tools: [],
           maxTurns: 3,
           systemPrompt: "stay concise",
           env: {
@@ -66,6 +67,7 @@ describe("parseQueueOwnerPayload", () => {
     assert.deepEqual(parsed.sessionOptions, {
       model: "fast-model",
       allowedTools: ["Read"],
+      tools: [],
       maxTurns: 3,
       systemPrompt: "stay concise",
       env: {

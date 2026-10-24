@@ -525,6 +525,9 @@ function assignParsedSessionOptions(state: SessionAcpxState, raw: unknown): void
   if (isStringArray(sessionOptions.allowed_tools)) {
     parsedSessionOptions.allowed_tools = [...sessionOptions.allowed_tools];
   }
+  if (isStringArray(sessionOptions.tools)) {
+    parsedSessionOptions.tools = [...sessionOptions.tools];
+  }
   if (isPositiveInteger(sessionOptions.max_turns)) {
     parsedSessionOptions.max_turns = sessionOptions.max_turns;
   }

@@ -58,6 +58,15 @@ test("setDesiredModelId preserves session env when clearing model", () => {
   });
 });
 
+test("setDesiredModelId preserves empty Claude tools when clearing model", () => {
+  const record = makeSessionRecord();
+  record.acpx = { session_options: { model: "sonnet", tools: [] } };
+
+  setDesiredModelId(record, undefined);
+
+  assert.deepEqual(record.acpx?.session_options, { tools: [] });
+});
+
 function makeSessionRecord(): SessionRecord {
   const timestamp = "2026-01-01T00:00:00.000Z";
   return {

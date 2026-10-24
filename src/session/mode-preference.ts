@@ -78,6 +78,7 @@ function hasStoredSessionOptions(
   return (
     typeof options.model === "string" ||
     Array.isArray(options.allowed_tools) ||
+    Array.isArray(options.tools) ||
     typeof options.max_turns === "number" ||
     options.system_prompt !== undefined ||
     options.env !== undefined ||

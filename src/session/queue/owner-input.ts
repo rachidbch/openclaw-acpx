@@ -135,6 +135,7 @@ function assignQueueOwnerSessionOptions(
   options.sessionOptions = {};
   assignSessionModel(options.sessionOptions, sessionOpts.model);
   assignSessionAllowedTools(options.sessionOptions, sessionOpts.allowedTools);
+  assignSessionTools(options.sessionOptions, sessionOpts.tools);
   assignSessionMaxTurns(options.sessionOptions, sessionOpts.maxTurns);
   assignSessionSystemPrompt(options.sessionOptions, sessionOpts.systemPrompt);
   assignSessionEnv(options.sessionOptions, sessionOpts.env);
@@ -155,6 +156,15 @@ function assignSessionAllowedTools(
 ): void {
   if (Array.isArray(value)) {
     options.allowedTools = value.filter((tool): tool is string => typeof tool === "string");
+  }
+}
+
+function assignSessionTools(
+  options: NonNullable<QueueOwnerRuntimeOptions["sessionOptions"]>,
+  value: unknown,
+): void {
+  if (Array.isArray(value) && value.every((tool) => typeof tool === "string")) {
+    options.tools = [...value];
   }
 }
 

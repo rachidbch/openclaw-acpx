@@ -64,6 +64,7 @@ test("parseQueueRequest accepts prompt session options", () => {
     sessionOptions: {
       model: "fast-model",
       allowedTools: ["Read", "Grep"],
+      tools: [],
       maxTurns: 4,
       systemPrompt: { append: "keep it brief" },
       env: {
@@ -86,6 +87,7 @@ test("parseQueueRequest accepts prompt session options", () => {
     sessionOptions: {
       model: "fast-model",
       allowedTools: ["Read", "Grep"],
+      tools: [],
       maxTurns: 4,
       systemPrompt: { append: "keep it brief" },
       env: {
@@ -118,6 +120,17 @@ test("parseQueueRequest rejects invalid prompt session options", () => {
       sessionOptions: {
         allowedTools: ["Read", 123],
       },
+      waitForCompletion: true,
+    }),
+    null,
+  );
+  assert.equal(
+    parseQueueRequest({
+      type: "submit_prompt",
+      requestId: "req-session-options-invalid-availability",
+      message: "hello",
+      permissionMode: "approve-reads",
+      sessionOptions: { tools: ["Read", 123] },
       waitForCompletion: true,
     }),
     null,
